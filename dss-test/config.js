@@ -30,11 +30,11 @@ const ENVS = {
         KEY_FILE: 'saKeyProd.json',
         USS_BASE_URL: 'https://uss.us.utmverse.com',
     },
-    // Local pool from ../dss-dev: dss-0.utmverse.com on 18000, dss-1.utmverse.com on 18010,
-    // dss-2.utmverse.com on 18020 (all 127.0.0.1 in /etc/hosts), mock-oauth on 18100.
+    // Local pool from ../dss-dev: dss-0.test on 18000, dss-1.test on 18010,
+    // dss-2.test on 18020 (all 127.0.0.1 in /etc/hosts), mock-oauth on 18100.
     staging: {
-        DSS_HOST: 'dss-0.utmverse.com',
-        DSS_BASE_URL: 'http://dss-0.utmverse.com:18000',
+        DSS_HOST: 'dss-0.test',
+        DSS_BASE_URL: 'http://dss-0.test:18000',
         OAUTH_BASE_URL: 'http://localhost:18100',
         KEY_FILE: 'saKeyStaging.json',
         USS_BASE_URL: 'https://test.utmverse.com',

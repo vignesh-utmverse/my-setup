@@ -44,10 +44,10 @@ source /home/laddu/my-setup/dss-test/completion.bash
 | `--uss-url` | USS base URL written into DSS records |
 
 The per-env defaults are in `config.js`. `staging` points at the local pool:
-`http://dss-0.utmverse.com:18000` and mock-oauth on `localhost:18100`. The pool's host names resolve to
+`http://dss-0.test:18000` and mock-oauth on `localhost:18100`. The pool's host names resolve to
 127.0.0.1 through `/etc/hosts`. To reach another instance, pass both the URL and the audience, for
-example `--dss-url http://dss-1.utmverse.com:18010 --dss-host dss-1.utmverse.com`. `--target` takes the
-audience from the URL's host name, so `--target http://dss-1.utmverse.com:18010` is enough.
+example `--dss-url http://dss-1.test:18010 --dss-host dss-1.test`. `--target` takes the
+audience from the URL's host name, so `--target http://dss-1.test:18010` is enough.
 
 ### Tests
 
@@ -87,9 +87,9 @@ node main.js -e staging -t injectScd --count 1000
 
 # Keep ~2000 flights live for 10 minutes, spread across all three local DSS instances
 node main.js -e staging -t injectScd --kind oi --count 2000 --waves 10 \
-  --target http://dss-0.utmverse.com:18000 \
-  --target http://dss-1.utmverse.com:18010 \
-  --target http://dss-2.utmverse.com:18020 \
+  --target http://dss-0.test:18000 \
+  --target http://dss-1.test:18010 \
+  --target http://dss-2.test:18020 \
   --out results.json
 
 # Show the requests that would be sent, without sending anything

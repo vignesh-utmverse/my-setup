@@ -21,10 +21,10 @@
 #   2        | 18020    | 18021 18022 18023   | 18024 18025 18026
 #   Offsets 7-9 of each block are free. mock-oauth is on 18100.
 #
-# Each DSS accepts tokens for audience dss-<i> or dss-<i>.utmverse.com.
+# Each DSS accepts tokens for audience dss-<i> or dss-<i>.test.
 #
 # Inside the "cluster" network each CockroachDB node is reachable as
-# <node>.crdb.instance-<i>.utmverse.com:26257, the names in instance-<i>/node.crt.
+# <node>.crdb.instance-<i>.test:26257, the names in instance-<i>/node.crt.
 
 networks:
   cluster:
@@ -43,7 +43,7 @@ x-both-profiles: &both-profiles
 x-init-profile: &init-profile
   profiles: [init]
 
-x-crdb-join: &crdb-join "--join=0.crdb.instance-0.utmverse.com:26257,1.crdb.instance-0.utmverse.com:26257,2.crdb.instance-0.utmverse.com:26257,0.crdb.instance-1.utmverse.com:26257,1.crdb.instance-1.utmverse.com:26257,2.crdb.instance-1.utmverse.com:26257,0.crdb.instance-2.utmverse.com:26257,1.crdb.instance-2.utmverse.com:26257,2.crdb.instance-2.utmverse.com:26257"
+x-crdb-join: &crdb-join "--join=0.crdb.instance-0.test:26257,1.crdb.instance-0.test:26257,2.crdb.instance-0.test:26257,0.crdb.instance-1.test:26257,1.crdb.instance-1.test:26257,2.crdb.instance-1.test:26257,0.crdb.instance-2.test:26257,1.crdb.instance-2.test:26257,2.crdb.instance-2.test:26257"
 
 # Root client certificates per instance (the pool CA bundle plus that instance's client.root pair).
 x-root-certs-0: &root-certs-0
@@ -68,7 +68,7 @@ services:
     container_name: crdb-0-0
     networks:
       cluster:
-        aliases: [0.crdb.instance-0.utmverse.com]
+        aliases: [0.crdb.instance-0.test]
     ports:
       - "18001:26257"
       - "18004:8080"
@@ -82,7 +82,7 @@ services:
       - --certs-dir=/certs
       - --listen-addr=:26257
       - --http-addr=:8080
-      - --advertise-addr=0.crdb.instance-0.utmverse.com:26257
+      - --advertise-addr=0.crdb.instance-0.test:26257
       - *crdb-join
       - --locality=organisation=instance-0
 
@@ -91,7 +91,7 @@ services:
     container_name: crdb-0-1
     networks:
       cluster:
-        aliases: [1.crdb.instance-0.utmverse.com]
+        aliases: [1.crdb.instance-0.test]
     ports:
       - "18002:26257"
       - "18005:8080"
@@ -105,7 +105,7 @@ services:
       - --certs-dir=/certs
       - --listen-addr=:26257
       - --http-addr=:8080
-      - --advertise-addr=1.crdb.instance-0.utmverse.com:26257
+      - --advertise-addr=1.crdb.instance-0.test:26257
       - *crdb-join
       - --locality=organisation=instance-0
 
@@ -114,7 +114,7 @@ services:
     container_name: crdb-0-2
     networks:
       cluster:
-        aliases: [2.crdb.instance-0.utmverse.com]
+        aliases: [2.crdb.instance-0.test]
     ports:
       - "18003:26257"
       - "18006:8080"
@@ -128,7 +128,7 @@ services:
       - --certs-dir=/certs
       - --listen-addr=:26257
       - --http-addr=:8080
-      - --advertise-addr=2.crdb.instance-0.utmverse.com:26257
+      - --advertise-addr=2.crdb.instance-0.test:26257
       - *crdb-join
       - --locality=organisation=instance-0
 
@@ -137,7 +137,7 @@ services:
     container_name: dss-0
     networks:
       cluster:
-        aliases: [dss-0.utmverse.com]
+        aliases: [dss-0.test]
     ports:
       - "18000:80"
     volumes: *root-certs-0
@@ -157,19 +157,19 @@ services:
     command:
       - core-service
       - --addr=:80
-      - --datastore_host=0.crdb.instance-0.utmverse.com,1.crdb.instance-0.utmverse.com,2.crdb.instance-0.utmverse.com
+      - --datastore_host=0.crdb.instance-0.test,1.crdb.instance-0.test,2.crdb.instance-0.test
       - --datastore_port=26257
       - --datastore_user=root
       - --datastore_ssl_mode=verify-full
       - --datastore_ssl_dir=/certs
       - --datastore_max_open_conns=30
-      - --accepted_jwt_audiences=dss-0,dss-0.utmverse.com
+      - --accepted_jwt_audiences=dss-0,dss-0.test
       - --jwks_endpoint=http://mock-oauth/jwks.json
       - --jwks_key_ids=1
       - --enable_scd
       - --enable_time_based_notification_index
       - --locality=organisation=instance-0
-      - --public_endpoint=http://dss-0.utmverse.com
+      - --public_endpoint=http://dss-0.test
 
   # ---------------------------------------------------------------- instance-1
   crdb-1-0:
@@ -177,7 +177,7 @@ services:
     container_name: crdb-1-0
     networks:
       cluster:
-        aliases: [0.crdb.instance-1.utmverse.com]
+        aliases: [0.crdb.instance-1.test]
     ports:
       - "18011:26257"
       - "18014:8080"
@@ -191,7 +191,7 @@ services:
       - --certs-dir=/certs
       - --listen-addr=:26257
       - --http-addr=:8080
-      - --advertise-addr=0.crdb.instance-1.utmverse.com:26257
+      - --advertise-addr=0.crdb.instance-1.test:26257
       - *crdb-join
       - --locality=organisation=instance-1
 
@@ -200,7 +200,7 @@ services:
     container_name: crdb-1-1
     networks:
       cluster:
-        aliases: [1.crdb.instance-1.utmverse.com]
+        aliases: [1.crdb.instance-1.test]
     ports:
       - "18012:26257"
       - "18015:8080"
@@ -214,7 +214,7 @@ services:
       - --certs-dir=/certs
       - --listen-addr=:26257
       - --http-addr=:8080
-      - --advertise-addr=1.crdb.instance-1.utmverse.com:26257
+      - --advertise-addr=1.crdb.instance-1.test:26257
       - *crdb-join
       - --locality=organisation=instance-1
 
@@ -223,7 +223,7 @@ services:
     container_name: crdb-1-2
     networks:
       cluster:
-        aliases: [2.crdb.instance-1.utmverse.com]
+        aliases: [2.crdb.instance-1.test]
     ports:
       - "18013:26257"
       - "18016:8080"
@@ -237,7 +237,7 @@ services:
       - --certs-dir=/certs
       - --listen-addr=:26257
       - --http-addr=:8080
-      - --advertise-addr=2.crdb.instance-1.utmverse.com:26257
+      - --advertise-addr=2.crdb.instance-1.test:26257
       - *crdb-join
       - --locality=organisation=instance-1
 
@@ -246,7 +246,7 @@ services:
     container_name: dss-1
     networks:
       cluster:
-        aliases: [dss-1.utmverse.com]
+        aliases: [dss-1.test]
     ports:
       - "18010:80"
     volumes: *root-certs-1
@@ -254,19 +254,19 @@ services:
     command:
       - core-service
       - --addr=:80
-      - --datastore_host=0.crdb.instance-1.utmverse.com,1.crdb.instance-1.utmverse.com,2.crdb.instance-1.utmverse.com
+      - --datastore_host=0.crdb.instance-1.test,1.crdb.instance-1.test,2.crdb.instance-1.test
       - --datastore_port=26257
       - --datastore_user=root
       - --datastore_ssl_mode=verify-full
       - --datastore_ssl_dir=/certs
       - --datastore_max_open_conns=30
-      - --accepted_jwt_audiences=dss-1,dss-1.utmverse.com
+      - --accepted_jwt_audiences=dss-1,dss-1.test
       - --jwks_endpoint=http://mock-oauth/jwks.json
       - --jwks_key_ids=1
       - --enable_scd
       - --enable_time_based_notification_index
       - --locality=organisation=instance-1
-      - --public_endpoint=http://dss-1.utmverse.com
+      - --public_endpoint=http://dss-1.test
 
   # ---------------------------------------------------------------- instance-2
   crdb-2-0:
@@ -274,7 +274,7 @@ services:
     container_name: crdb-2-0
     networks:
       cluster:
-        aliases: [0.crdb.instance-2.utmverse.com]
+        aliases: [0.crdb.instance-2.test]
     ports:
       - "18021:26257"
       - "18024:8080"
@@ -288,7 +288,7 @@ services:
       - --certs-dir=/certs
       - --listen-addr=:26257
       - --http-addr=:8080
-      - --advertise-addr=0.crdb.instance-2.utmverse.com:26257
+      - --advertise-addr=0.crdb.instance-2.test:26257
       - *crdb-join
       - --locality=organisation=instance-2
 
@@ -297,7 +297,7 @@ services:
     container_name: crdb-2-1
     networks:
       cluster:
-        aliases: [1.crdb.instance-2.utmverse.com]
+        aliases: [1.crdb.instance-2.test]
     ports:
       - "18022:26257"
       - "18025:8080"
@@ -311,7 +311,7 @@ services:
       - --certs-dir=/certs
       - --listen-addr=:26257
       - --http-addr=:8080
-      - --advertise-addr=1.crdb.instance-2.utmverse.com:26257
+      - --advertise-addr=1.crdb.instance-2.test:26257
       - *crdb-join
       - --locality=organisation=instance-2
 
@@ -320,7 +320,7 @@ services:
     container_name: crdb-2-2
     networks:
       cluster:
-        aliases: [2.crdb.instance-2.utmverse.com]
+        aliases: [2.crdb.instance-2.test]
     ports:
       - "18023:26257"
       - "18026:8080"
@@ -334,7 +334,7 @@ services:
       - --certs-dir=/certs
       - --listen-addr=:26257
       - --http-addr=:8080
-      - --advertise-addr=2.crdb.instance-2.utmverse.com:26257
+      - --advertise-addr=2.crdb.instance-2.test:26257
       - *crdb-join
       - --locality=organisation=instance-2
 
@@ -343,7 +343,7 @@ services:
     container_name: dss-2
     networks:
       cluster:
-        aliases: [dss-2.utmverse.com]
+        aliases: [dss-2.test]
     ports:
       - "18020:80"
     volumes: *root-certs-2
@@ -351,19 +351,19 @@ services:
     command:
       - core-service
       - --addr=:80
-      - --datastore_host=0.crdb.instance-2.utmverse.com,1.crdb.instance-2.utmverse.com,2.crdb.instance-2.utmverse.com
+      - --datastore_host=0.crdb.instance-2.test,1.crdb.instance-2.test,2.crdb.instance-2.test
       - --datastore_port=26257
       - --datastore_user=root
       - --datastore_ssl_mode=verify-full
       - --datastore_ssl_dir=/certs
       - --datastore_max_open_conns=30
-      - --accepted_jwt_audiences=dss-2,dss-2.utmverse.com
+      - --accepted_jwt_audiences=dss-2,dss-2.test
       - --jwks_endpoint=http://mock-oauth/jwks.json
       - --jwks_key_ids=1
       - --enable_scd
       - --enable_time_based_notification_index
       - --locality=organisation=instance-2
-      - --public_endpoint=http://dss-2.utmverse.com
+      - --public_endpoint=http://dss-2.test
 
   # ---------------------------------------------------------------- cluster setup (init profile only)
   # Initialises the 9-node cluster; a no-op when it is already initialised.
@@ -386,9 +386,9 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        until out=$$(/cockroach/cockroach init --certs-dir=/certs --host=0.crdb.instance-0.utmverse.com:26257 2>&1); do
+        until out=$$(/cockroach/cockroach init --certs-dir=/certs --host=0.crdb.instance-0.test:26257 2>&1); do
           case "$$out" in *"already been initialized"*) break ;; esac
-          echo "waiting for 0.crdb.instance-0.utmverse.com: $$out"
+          echo "waiting for 0.crdb.instance-0.test: $$out"
           sleep 3
         done
         echo "CockroachDB cluster is initialized"
@@ -408,7 +408,7 @@ services:
       - migrate
       - --schemas_dir=/db-schemas/rid
       - --db_version=latest
-      - --datastore_host=0.crdb.instance-0.utmverse.com
+      - --datastore_host=0.crdb.instance-0.test
       - --datastore_user=root
       - --datastore_ssl_mode=verify-full
       - --datastore_ssl_dir=/certs
@@ -425,7 +425,7 @@ services:
       - migrate
       - --schemas_dir=/db-schemas/scd
       - --db_version=latest
-      - --datastore_host=0.crdb.instance-0.utmverse.com
+      - --datastore_host=0.crdb.instance-0.test
       - --datastore_user=root
       - --datastore_ssl_mode=verify-full
       - --datastore_ssl_dir=/certs
@@ -442,7 +442,7 @@ services:
       - migrate
       - --schemas_dir=/db-schemas/aux_
       - --db_version=latest
-      - --datastore_host=0.crdb.instance-0.utmverse.com
+      - --datastore_host=0.crdb.instance-0.test
       - --datastore_user=root
       - --datastore_ssl_mode=verify-full
       - --datastore_ssl_dir=/certs
