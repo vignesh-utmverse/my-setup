@@ -30,16 +30,19 @@ function vertices(value, name) {
     return points;
 }
 
-// "--target <url>[=<audience>]" values -> [{ url, host }]. The audience defaults to the URL's
-// hostname; no targets means the env's DSS_TARGETS, or its own DSS if it has none.
+// "<url>[=<audience>]" -> { url, host }. The audience defaults to the URL's hostname.
+function parseTarget(entry) {
+    const eq = entry.indexOf('=');
+    const url = eq === -1 ? entry : entry.slice(0, eq);
+    return { url, host: eq === -1 ? new URL(url).hostname : entry.slice(eq + 1) };
+}
+
+// "--target" values -> [{ url, host }]; no targets means the env's DSS_TARGETS, or its own DSS if
+// it has none.
 function targets(list, cfg) {
     const entries = list?.length ? list : cfg.DSS_TARGETS;
     if (!entries?.length) return [{ url: cfg.DSS_BASE_URL, host: cfg.DSS_HOST }];
-    return entries.map(entry => {
-        const eq = entry.indexOf('=');
-        const url = eq === -1 ? entry : entry.slice(0, eq);
-        return { url, host: eq === -1 ? new URL(url).hostname : entry.slice(eq + 1) };
-    });
+    return entries.map(parseTarget);
 }
 
-module.exports = { num, positiveInt, oneOf, vertices, targets };
+module.exports = { num, positiveInt, oneOf, vertices, parseTarget, targets };

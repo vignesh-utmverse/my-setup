@@ -1,7 +1,9 @@
 const path = require('path');
+const { parseTarget } = require('./lib/args.js');
 
 // KEY_FILE paths are relative to this folder. DSS_TARGETS (optional) is the default list for tests
-// that take --target, in the same "<url>[=<audience>]" form.
+// that take --target, in the same "<url>[=<audience>]" form. An env with DSS_TARGETS but no
+// DSS_BASE_URL uses the first target as its DSS.
 const ENVS = {
     prequal: {
         DSS_HOST: 'prequal-dss.utmverse.com',
@@ -34,8 +36,6 @@ const ENVS = {
     // Local pool from ../dss-dev: dss-0.test on 18000, dss-1.test on 18010,
     // dss-2.test on 18020 (all 127.0.0.1 in /etc/hosts), mock-oauth on 18100.
     staging: {
-        DSS_HOST: 'dss-0.test',
-        DSS_BASE_URL: 'http://dss-0.test:18000',
         DSS_TARGETS: ['http://dss-0.test:18000', 'http://dss-1.test:18010', 'http://dss-2.test:18020'],
         OAUTH_BASE_URL: 'http://localhost:18100',
         KEY_FILE: 'saKeyStaging.json',
@@ -49,6 +49,11 @@ function getConfig(env, overrides = {}) {
     if (!base) throw new Error(`Unknown environment: ${env} (expected one of: ${Object.keys(ENVS).join(', ')})`);
 
     const cfg = { ENV: env, ...base, KEY_FILE: path.join(__dirname, base.KEY_FILE) };
+    if (cfg.DSS_BASE_URL === undefined && cfg.DSS_TARGETS?.length) {
+        const { url, host } = parseTarget(cfg.DSS_TARGETS[0]);
+        cfg.DSS_BASE_URL = url;
+        cfg.DSS_HOST = host;
+    }
     for (const [key, value] of Object.entries(overrides)) {
         if (value !== undefined) cfg[key] = key === 'KEY_FILE' ? path.resolve(value) : value;
     }
