@@ -44,7 +44,7 @@ source /home/laddu/my-setup/dss-test/completion.bash
 | `--uss-url` | USS base URL written into DSS records |
 
 The per-env defaults are in `config.js`. `staging` points at the local pool:
-`http://dss-0.test:18000` and mock-oauth on `localhost:18100`. The pool's host names resolve to
+`http://dss-0.test:18000` and mock-oauth on `oauth.test:18100`. The pool's host names resolve to
 127.0.0.1 through `/etc/hosts`. To reach another instance, pass both the URL and the audience, for
 example `--dss-url http://dss-1.test:18010 --dss-host dss-1.test`. `--target` takes the
 audience from the URL's host name, so `--target http://dss-1.test:18010` is enough.
