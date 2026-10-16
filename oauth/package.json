@@ -1,0 +1,12 @@
+{
+  "name": "mock-dss-oauth",
+  "version": "1.0.0",
+  "description": "Local JWT/OAuth service mimicking DSS OAuth host",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2"
+  }
+}

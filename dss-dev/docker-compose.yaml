@@ -1,0 +1,470 @@
+# Local DSS pool: 3 DSS instances (interuss/dss v0.23.0), each with 3 CockroachDB nodes.
+# All 9 nodes join one CockroachDB cluster, as in a real pool.
+#
+# Before the first `docker compose up`:
+#   docker network create cluster
+#   cat instance-0/ca.crt instance-1/ca.crt instance-2/ca.crt > ca-bundle.crt
+#
+# Profiles (every service is in one, so always pass --profile):
+#   docker compose --profile init up -d      everything: nodes, DSS, mock-oauth, cluster init and
+#                                            schema migrations. Needed the first time and after
+#                                            `down -v`; safe to repeat (init and migrations are no-ops).
+#   docker compose --profile no-init up -d   nodes, DSS and mock-oauth only, for an initialised cluster.
+#   docker compose --profile init down       stops and removes everything (add -v to delete the data).
+#
+# Every service restarts when it exits with an error (restart: on-failure).
+#
+# Host ports: 18000 + 10 x instance + offset
+#   instance | DSS HTTP | CRDB SQL node 0/1/2 | CRDB HTTP node 0/1/2
+#   0        | 18000    | 18001 18002 18003   | 18004 18005 18006
+#   1        | 18010    | 18011 18012 18013   | 18014 18015 18016
+#   2        | 18020    | 18021 18022 18023   | 18024 18025 18026
+#   Offsets 7-9 of each block are free. mock-oauth keeps 8084.
+#
+# Inside the "cluster" network each CockroachDB node is reachable as
+# <node>.crdb.instance-<i>.utmverse.com:26257, the names in instance-<i>/node.crt.
+
+networks:
+  cluster:
+    external: true
+
+x-crdb-image: &crdb-image
+  image: cockroachdb/cockroach:v24.1.3
+  restart: on-failure
+
+x-dss-image: &dss-image
+  image: interuss/dss:v0.23.0
+  restart: on-failure
+
+x-both-profiles: &both-profiles
+  profiles: [init, no-init]
+
+x-init-profile: &init-profile
+  profiles: [init]
+
+x-crdb-join: &crdb-join "--join=0.crdb.instance-0.utmverse.com:26257,1.crdb.instance-0.utmverse.com:26257,2.crdb.instance-0.utmverse.com:26257,0.crdb.instance-1.utmverse.com:26257,1.crdb.instance-1.utmverse.com:26257,2.crdb.instance-1.utmverse.com:26257,0.crdb.instance-2.utmverse.com:26257,1.crdb.instance-2.utmverse.com:26257,2.crdb.instance-2.utmverse.com:26257"
+
+# Root client certificates per instance (the pool CA bundle plus that instance's client.root pair).
+x-root-certs-0: &root-certs-0
+  - ./ca-bundle.crt:/certs/ca.crt:ro
+  - ./instance-0/client.root.crt:/certs/client.root.crt:ro
+  - ./instance-0/client.root.key:/certs/client.root.key:ro
+
+x-root-certs-1: &root-certs-1
+  - ./ca-bundle.crt:/certs/ca.crt:ro
+  - ./instance-1/client.root.crt:/certs/client.root.crt:ro
+  - ./instance-1/client.root.key:/certs/client.root.key:ro
+
+x-root-certs-2: &root-certs-2
+  - ./ca-bundle.crt:/certs/ca.crt:ro
+  - ./instance-2/client.root.crt:/certs/client.root.crt:ro
+  - ./instance-2/client.root.key:/certs/client.root.key:ro
+
+services:
+  # ---------------------------------------------------------------- instance-0
+  crdb-0-0:
+    <<: [*crdb-image, *both-profiles]
+    container_name: crdb-0-0
+    networks:
+      cluster:
+        aliases: [0.crdb.instance-0.utmverse.com]
+    ports:
+      - "18001:26257"
+      - "18004:8080"
+    volumes:
+      - crdb-0-0-data:/cockroach/cockroach-data
+      - ./ca-bundle.crt:/certs/ca.crt:ro
+      - ./instance-0/node.crt:/certs/node.crt:ro
+      - ./instance-0/node.key:/certs/node.key:ro
+    command:
+      - start
+      - --certs-dir=/certs
+      - --listen-addr=:26257
+      - --http-addr=:8080
+      - --advertise-addr=0.crdb.instance-0.utmverse.com:26257
+      - *crdb-join
+      - --locality=organisation=instance-0
+
+  crdb-0-1:
+    <<: [*crdb-image, *both-profiles]
+    container_name: crdb-0-1
+    networks:
+      cluster:
+        aliases: [1.crdb.instance-0.utmverse.com]
+    ports:
+      - "18002:26257"
+      - "18005:8080"
+    volumes:
+      - crdb-0-1-data:/cockroach/cockroach-data
+      - ./ca-bundle.crt:/certs/ca.crt:ro
+      - ./instance-0/node.crt:/certs/node.crt:ro
+      - ./instance-0/node.key:/certs/node.key:ro
+    command:
+      - start
+      - --certs-dir=/certs
+      - --listen-addr=:26257
+      - --http-addr=:8080
+      - --advertise-addr=1.crdb.instance-0.utmverse.com:26257
+      - *crdb-join
+      - --locality=organisation=instance-0
+
+  crdb-0-2:
+    <<: [*crdb-image, *both-profiles]
+    container_name: crdb-0-2
+    networks:
+      cluster:
+        aliases: [2.crdb.instance-0.utmverse.com]
+    ports:
+      - "18003:26257"
+      - "18006:8080"
+    volumes:
+      - crdb-0-2-data:/cockroach/cockroach-data
+      - ./ca-bundle.crt:/certs/ca.crt:ro
+      - ./instance-0/node.crt:/certs/node.crt:ro
+      - ./instance-0/node.key:/certs/node.key:ro
+    command:
+      - start
+      - --certs-dir=/certs
+      - --listen-addr=:26257
+      - --http-addr=:8080
+      - --advertise-addr=2.crdb.instance-0.utmverse.com:26257
+      - *crdb-join
+      - --locality=organisation=instance-0
+
+  dss-0:
+    <<: [*dss-image, *both-profiles]
+    container_name: dss-0
+    networks:
+      cluster:
+        aliases: [dss-0.utmverse.com]
+    ports:
+      - "18000:80"
+    volumes: *root-certs-0
+    # The bootstrappers only exist in the init profile; required: false lets no-init start without them.
+    depends_on: &dss-depends-on
+      cluster-rid-bootstrapper:
+        condition: service_completed_successfully
+        required: false
+      cluster-scd-bootstrapper:
+        condition: service_completed_successfully
+        required: false
+      cluster-aux-bootstrapper:
+        condition: service_completed_successfully
+        required: false
+      mock-oauth:
+        condition: service_started
+    command:
+      - core-service
+      - --addr=:80
+      - --datastore_host=0.crdb.instance-0.utmverse.com,1.crdb.instance-0.utmverse.com,2.crdb.instance-0.utmverse.com
+      - --datastore_port=26257
+      - --datastore_user=root
+      - --datastore_ssl_mode=verify-full
+      - --datastore_ssl_dir=/certs
+      - --datastore_max_open_conns=30
+      - --accepted_jwt_audiences=dss-0
+      - --jwks_endpoint=http://mock-oauth/jwks.json
+      - --jwks_key_ids=1
+      - --enable_scd
+      - --enable_time_based_notification_index
+      - --locality=organisation=instance-0
+      - --public_endpoint=http://dss-0.utmverse.com
+
+  # ---------------------------------------------------------------- instance-1
+  crdb-1-0:
+    <<: [*crdb-image, *both-profiles]
+    container_name: crdb-1-0
+    networks:
+      cluster:
+        aliases: [0.crdb.instance-1.utmverse.com]
+    ports:
+      - "18011:26257"
+      - "18014:8080"
+    volumes:
+      - crdb-1-0-data:/cockroach/cockroach-data
+      - ./ca-bundle.crt:/certs/ca.crt:ro
+      - ./instance-1/node.crt:/certs/node.crt:ro
+      - ./instance-1/node.key:/certs/node.key:ro
+    command:
+      - start
+      - --certs-dir=/certs
+      - --listen-addr=:26257
+      - --http-addr=:8080
+      - --advertise-addr=0.crdb.instance-1.utmverse.com:26257
+      - *crdb-join
+      - --locality=organisation=instance-1
+
+  crdb-1-1:
+    <<: [*crdb-image, *both-profiles]
+    container_name: crdb-1-1
+    networks:
+      cluster:
+        aliases: [1.crdb.instance-1.utmverse.com]
+    ports:
+      - "18012:26257"
+      - "18015:8080"
+    volumes:
+      - crdb-1-1-data:/cockroach/cockroach-data
+      - ./ca-bundle.crt:/certs/ca.crt:ro
+      - ./instance-1/node.crt:/certs/node.crt:ro
+      - ./instance-1/node.key:/certs/node.key:ro
+    command:
+      - start
+      - --certs-dir=/certs
+      - --listen-addr=:26257
+      - --http-addr=:8080
+      - --advertise-addr=1.crdb.instance-1.utmverse.com:26257
+      - *crdb-join
+      - --locality=organisation=instance-1
+
+  crdb-1-2:
+    <<: [*crdb-image, *both-profiles]
+    container_name: crdb-1-2
+    networks:
+      cluster:
+        aliases: [2.crdb.instance-1.utmverse.com]
+    ports:
+      - "18013:26257"
+      - "18016:8080"
+    volumes:
+      - crdb-1-2-data:/cockroach/cockroach-data
+      - ./ca-bundle.crt:/certs/ca.crt:ro
+      - ./instance-1/node.crt:/certs/node.crt:ro
+      - ./instance-1/node.key:/certs/node.key:ro
+    command:
+      - start
+      - --certs-dir=/certs
+      - --listen-addr=:26257
+      - --http-addr=:8080
+      - --advertise-addr=2.crdb.instance-1.utmverse.com:26257
+      - *crdb-join
+      - --locality=organisation=instance-1
+
+  dss-1:
+    <<: [*dss-image, *both-profiles]
+    container_name: dss-1
+    networks:
+      cluster:
+        aliases: [dss-1.utmverse.com]
+    ports:
+      - "18010:80"
+    volumes: *root-certs-1
+    depends_on: *dss-depends-on
+    command:
+      - core-service
+      - --addr=:80
+      - --datastore_host=0.crdb.instance-1.utmverse.com,1.crdb.instance-1.utmverse.com,2.crdb.instance-1.utmverse.com
+      - --datastore_port=26257
+      - --datastore_user=root
+      - --datastore_ssl_mode=verify-full
+      - --datastore_ssl_dir=/certs
+      - --datastore_max_open_conns=30
+      - --accepted_jwt_audiences=dss-1
+      - --jwks_endpoint=http://mock-oauth/jwks.json
+      - --jwks_key_ids=1
+      - --enable_scd
+      - --enable_time_based_notification_index
+      - --locality=organisation=instance-1
+      - --public_endpoint=http://dss-1.utmverse.com
+
+  # ---------------------------------------------------------------- instance-2
+  crdb-2-0:
+    <<: [*crdb-image, *both-profiles]
+    container_name: crdb-2-0
+    networks:
+      cluster:
+        aliases: [0.crdb.instance-2.utmverse.com]
+    ports:
+      - "18021:26257"
+      - "18024:8080"
+    volumes:
+      - crdb-2-0-data:/cockroach/cockroach-data
+      - ./ca-bundle.crt:/certs/ca.crt:ro
+      - ./instance-2/node.crt:/certs/node.crt:ro
+      - ./instance-2/node.key:/certs/node.key:ro
+    command:
+      - start
+      - --certs-dir=/certs
+      - --listen-addr=:26257
+      - --http-addr=:8080
+      - --advertise-addr=0.crdb.instance-2.utmverse.com:26257
+      - *crdb-join
+      - --locality=organisation=instance-2
+
+  crdb-2-1:
+    <<: [*crdb-image, *both-profiles]
+    container_name: crdb-2-1
+    networks:
+      cluster:
+        aliases: [1.crdb.instance-2.utmverse.com]
+    ports:
+      - "18022:26257"
+      - "18025:8080"
+    volumes:
+      - crdb-2-1-data:/cockroach/cockroach-data
+      - ./ca-bundle.crt:/certs/ca.crt:ro
+      - ./instance-2/node.crt:/certs/node.crt:ro
+      - ./instance-2/node.key:/certs/node.key:ro
+    command:
+      - start
+      - --certs-dir=/certs
+      - --listen-addr=:26257
+      - --http-addr=:8080
+      - --advertise-addr=1.crdb.instance-2.utmverse.com:26257
+      - *crdb-join
+      - --locality=organisation=instance-2
+
+  crdb-2-2:
+    <<: [*crdb-image, *both-profiles]
+    container_name: crdb-2-2
+    networks:
+      cluster:
+        aliases: [2.crdb.instance-2.utmverse.com]
+    ports:
+      - "18023:26257"
+      - "18026:8080"
+    volumes:
+      - crdb-2-2-data:/cockroach/cockroach-data
+      - ./ca-bundle.crt:/certs/ca.crt:ro
+      - ./instance-2/node.crt:/certs/node.crt:ro
+      - ./instance-2/node.key:/certs/node.key:ro
+    command:
+      - start
+      - --certs-dir=/certs
+      - --listen-addr=:26257
+      - --http-addr=:8080
+      - --advertise-addr=2.crdb.instance-2.utmverse.com:26257
+      - *crdb-join
+      - --locality=organisation=instance-2
+
+  dss-2:
+    <<: [*dss-image, *both-profiles]
+    container_name: dss-2
+    networks:
+      cluster:
+        aliases: [dss-2.utmverse.com]
+    ports:
+      - "18020:80"
+    volumes: *root-certs-2
+    depends_on: *dss-depends-on
+    command:
+      - core-service
+      - --addr=:80
+      - --datastore_host=0.crdb.instance-2.utmverse.com,1.crdb.instance-2.utmverse.com,2.crdb.instance-2.utmverse.com
+      - --datastore_port=26257
+      - --datastore_user=root
+      - --datastore_ssl_mode=verify-full
+      - --datastore_ssl_dir=/certs
+      - --datastore_max_open_conns=30
+      - --accepted_jwt_audiences=dss-2
+      - --jwks_endpoint=http://mock-oauth/jwks.json
+      - --jwks_key_ids=1
+      - --enable_scd
+      - --enable_time_based_notification_index
+      - --locality=organisation=instance-2
+      - --public_endpoint=http://dss-2.utmverse.com
+
+  # ---------------------------------------------------------------- cluster setup (init profile only)
+  # Initialises the 9-node cluster; a no-op when it is already initialised.
+  crdb-init:
+    <<: [*crdb-image, *init-profile]
+    container_name: crdb-init
+    networks:
+      - cluster
+    volumes: *root-certs-0
+    depends_on:
+      - crdb-0-0
+      - crdb-0-1
+      - crdb-0-2
+      - crdb-1-0
+      - crdb-1-1
+      - crdb-1-2
+      - crdb-2-0
+      - crdb-2-1
+      - crdb-2-2
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        until out=$$(/cockroach/cockroach init --certs-dir=/certs --host=0.crdb.instance-0.utmverse.com:26257 2>&1); do
+          case "$$out" in *"already been initialized"*) break ;; esac
+          echo "waiting for 0.crdb.instance-0.utmverse.com: $$out"
+          sleep 3
+        done
+        echo "CockroachDB cluster is initialized"
+
+  # The schema is shared by the whole cluster, so each database is migrated once.
+  cluster-rid-bootstrapper:
+    <<: [*dss-image, *init-profile]
+    container_name: cluster-rid-bootstrapper
+    networks:
+      - cluster
+    volumes: *root-certs-0
+    depends_on: &bootstrapper-depends-on
+      crdb-init:
+        condition: service_completed_successfully
+    command:
+      - db-manager
+      - migrate
+      - --schemas_dir=/db-schemas/rid
+      - --db_version=latest
+      - --datastore_host=0.crdb.instance-0.utmverse.com
+      - --datastore_user=root
+      - --datastore_ssl_mode=verify-full
+      - --datastore_ssl_dir=/certs
+
+  cluster-scd-bootstrapper:
+    <<: [*dss-image, *init-profile]
+    container_name: cluster-scd-bootstrapper
+    networks:
+      - cluster
+    volumes: *root-certs-0
+    depends_on: *bootstrapper-depends-on
+    command:
+      - db-manager
+      - migrate
+      - --schemas_dir=/db-schemas/scd
+      - --db_version=latest
+      - --datastore_host=0.crdb.instance-0.utmverse.com
+      - --datastore_user=root
+      - --datastore_ssl_mode=verify-full
+      - --datastore_ssl_dir=/certs
+
+  cluster-aux-bootstrapper:
+    <<: [*dss-image, *init-profile]
+    container_name: cluster-aux-bootstrapper
+    networks:
+      - cluster
+    volumes: *root-certs-0
+    depends_on: *bootstrapper-depends-on
+    command:
+      - db-manager
+      - migrate
+      - --schemas_dir=/db-schemas/aux_
+      - --db_version=latest
+      - --datastore_host=0.crdb.instance-0.utmverse.com
+      - --datastore_user=root
+      - --datastore_ssl_mode=verify-full
+      - --datastore_ssl_dir=/certs
+
+  # ---------------------------------------------------------------- auth
+  # Built from ../oauth; pull_policy: build rebuilds it on every `up` so source edits are picked up.
+  mock-oauth:
+    <<: *both-profiles
+    build: ../oauth
+    image: mock-oauth:latest
+    pull_policy: build
+    restart: on-failure
+    container_name: mock-oauth
+    networks:
+      - cluster
+
+volumes:
+  crdb-0-0-data:
+  crdb-0-1-data:
+  crdb-0-2-data:
+  crdb-1-0-data:
+  crdb-1-1-data:
+  crdb-1-2-data:
+  crdb-2-0-data:
+  crdb-2-1-data:
+  crdb-2-2-data:
