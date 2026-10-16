@@ -26,7 +26,6 @@
 
 networks:
   cluster:
-    external: true
 
 x-crdb-image: &crdb-image
   image: cockroachdb/cockroach:v24.1.3
