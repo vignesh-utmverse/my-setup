@@ -7,7 +7,7 @@ const SCOPE = 'interuss.pool_status.read';
 module.exports = {
     description: 'Read the global options from one or more DSS instances',
     options: {
-        target: { type: 'string', multiple: true, desc: 'DSS to query as <url>[=<audience>]; repeat for several (default: the env DSS)' },
+        target: { type: 'string', multiple: true, desc: 'DSS to query as <url>[=<audience>]; repeat for several (default: the env DSS_TARGETS, else the env DSS)' },
     },
     async run(cfg, opts) {
         for (const { url, host } of targets(opts.target, cfg)) {

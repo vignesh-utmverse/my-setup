@@ -1,6 +1,7 @@
 const path = require('path');
 
-// KEY_FILE paths are relative to this folder.
+// KEY_FILE paths are relative to this folder. DSS_TARGETS (optional) is the default list for tests
+// that take --target, in the same "<url>[=<audience>]" form.
 const ENVS = {
     prequal: {
         DSS_HOST: 'prequal-dss.utmverse.com',
@@ -35,6 +36,7 @@ const ENVS = {
     staging: {
         DSS_HOST: 'dss-0.test',
         DSS_BASE_URL: 'http://dss-0.test:18000',
+        DSS_TARGETS: ['http://dss-0.test:18000', 'http://dss-1.test:18010', 'http://dss-2.test:18020'],
         OAUTH_BASE_URL: 'http://localhost:18100',
         KEY_FILE: 'saKeyStaging.json',
         USS_BASE_URL: 'https://test.utmverse.com',
@@ -50,6 +52,8 @@ function getConfig(env, overrides = {}) {
     for (const [key, value] of Object.entries(overrides)) {
         if (value !== undefined) cfg[key] = key === 'KEY_FILE' ? path.resolve(value) : value;
     }
+    // An explicit --dss-url means that one DSS, not the env's pool.
+    if (overrides.DSS_BASE_URL !== undefined) delete cfg.DSS_TARGETS;
     return cfg;
 }
 

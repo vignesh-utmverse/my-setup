@@ -16,7 +16,7 @@ const INJECT_OPTIONS = {
     'start-offset-sec':  { type: 'string', default: '0', desc: 'Window start relative to send time, in seconds' },
     waves:               { type: 'string', default: '1', desc: 'Number of injection rounds' },
     'wave-interval-sec': { type: 'string', desc: 'Seconds between wave starts (default: --window-sec)' },
-    target:              { type: 'string', multiple: true, desc: 'DSS to send to as <url>[=<audience>]; repeat to round-robin across a pool (default: the env DSS)' },
+    target:              { type: 'string', multiple: true, desc: 'DSS to send to as <url>[=<audience>]; repeat to round-robin across a pool (default: the env DSS_TARGETS, else the env DSS)' },
     lat:                 { type: 'string', default: '37.7633546504290', desc: 'Grid centre latitude' },
     lng:                 { type: 'string', default: '-122.4137267893253', desc: 'Grid centre longitude' },
     'spacing-km':        { type: 'string', default: '3', desc: 'Distance between grid points; keep spacing minus size >= 2.2 km' },

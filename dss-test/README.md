@@ -49,6 +49,11 @@ The per-env defaults are in `config.js`. `staging` points at the local pool:
 example `--dss-url http://dss-1.test:18010 --dss-host dss-1.test`. `--target` takes the
 audience from the URL's host name, so `--target http://dss-1.test:18010` is enough.
 
+Tests that take `--target` (`injectRid`, `injectScd`, `globalOptions`, `globalLockFetch`) default to
+the env's `DSS_TARGETS` list when no `--target` is given. In `staging` that list is all three local
+instances, so these tests spread across the whole pool. Pass `--target` to use specific instances
+instead, or `--dss-url` to use just that one DSS.
+
 ### Tests
 
 | Test | What it does | Main options |
@@ -86,11 +91,11 @@ node main.js -e staging -t injectRid --count 1000
 node main.js -e staging -t injectScd --count 1000
 
 # Keep ~2000 flights live for 10 minutes, spread across all three local DSS instances
+node main.js -e staging -t injectScd --kind oi --count 2000 --waves 10 --out results.json
+
+# Same, but only against dss-1
 node main.js -e staging -t injectScd --kind oi --count 2000 --waves 10 \
-  --target http://dss-0.test:18000 \
-  --target http://dss-1.test:18010 \
-  --target http://dss-2.test:18020 \
-  --out results.json
+  --target http://dss-1.test:18010
 
 # Show the requests that would be sent, without sending anything
 node main.js -e staging -t injectScd --count 10 --dry-run
