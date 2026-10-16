@@ -19,7 +19,9 @@
 #   0        | 18000    | 18001 18002 18003   | 18004 18005 18006
 #   1        | 18010    | 18011 18012 18013   | 18014 18015 18016
 #   2        | 18020    | 18021 18022 18023   | 18024 18025 18026
-#   Offsets 7-9 of each block are free. mock-oauth keeps 8084.
+#   Offsets 7-9 of each block are free. mock-oauth is on 18100.
+#
+# Each DSS accepts tokens for audience dss-<i> or dss-<i>.utmverse.com.
 #
 # Inside the "cluster" network each CockroachDB node is reachable as
 # <node>.crdb.instance-<i>.utmverse.com:26257, the names in instance-<i>/node.crt.
@@ -161,7 +163,7 @@ services:
       - --datastore_ssl_mode=verify-full
       - --datastore_ssl_dir=/certs
       - --datastore_max_open_conns=30
-      - --accepted_jwt_audiences=dss-0
+      - --accepted_jwt_audiences=dss-0,dss-0.utmverse.com
       - --jwks_endpoint=http://mock-oauth/jwks.json
       - --jwks_key_ids=1
       - --enable_scd
@@ -258,7 +260,7 @@ services:
       - --datastore_ssl_mode=verify-full
       - --datastore_ssl_dir=/certs
       - --datastore_max_open_conns=30
-      - --accepted_jwt_audiences=dss-1
+      - --accepted_jwt_audiences=dss-1,dss-1.utmverse.com
       - --jwks_endpoint=http://mock-oauth/jwks.json
       - --jwks_key_ids=1
       - --enable_scd
@@ -355,7 +357,7 @@ services:
       - --datastore_ssl_mode=verify-full
       - --datastore_ssl_dir=/certs
       - --datastore_max_open_conns=30
-      - --accepted_jwt_audiences=dss-2
+      - --accepted_jwt_audiences=dss-2,dss-2.utmverse.com
       - --jwks_endpoint=http://mock-oauth/jwks.json
       - --jwks_key_ids=1
       - --enable_scd
@@ -456,6 +458,8 @@ services:
     container_name: mock-oauth
     networks:
       - cluster
+    ports:
+      - "18100:80"
 
 volumes:
   crdb-0-0-data:

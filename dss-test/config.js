@@ -1,55 +1,56 @@
-const CACHE_FILE = './tokenCache.json';
+const path = require('path');
 
-const ENV = 'prequal';
+// KEY_FILE paths are relative to this folder.
+const ENVS = {
+    prequal: {
+        DSS_HOST: 'prequal-dss.utmverse.com',
+        DSS_BASE_URL: 'https://prequal-dss.utmverse.com',
+        OAUTH_BASE_URL: 'https://oauth.us-pre-qual.rpasplatform.net',
+        KEY_FILE: 'saKey.json',
+        USS_BASE_URL: 'https://prequal.utmverse.com',
+    },
+    qual: {
+        DSS_HOST: 'qual-dss.utmverse.com',
+        DSS_BASE_URL: 'https://qual-dss.utmverse.com',
+        OAUTH_BASE_URL: 'https://oauth.us-qual-partners.rpasplatform.net',
+        KEY_FILE: 'saKey.json',
+        USS_BASE_URL: 'https://qual.utmverse.com',
+    },
+    sim: {
+        DSS_HOST: 'sim-dss.utmverse.com',
+        DSS_BASE_URL: 'https://sim-dss.utmverse.com',
+        OAUTH_BASE_URL: 'https://oauth.us-simulation.rpasplatform.net',
+        KEY_FILE: 'saKey.json',
+        USS_BASE_URL: 'https://sim.utmverse.com',
+    },
+    prod: {
+        DSS_HOST: 'us-dss.utmverse.com',
+        DSS_BASE_URL: 'https://us-dss.utmverse.com',
+        OAUTH_BASE_URL: 'https://oauth.us.rpasplatform.net',
+        KEY_FILE: 'saKeyProd.json',
+        USS_BASE_URL: 'https://uss.us.utmverse.com',
+    },
+    // Local pool from ../dss-dev: dss-0.utmverse.com on 18000, dss-1.utmverse.com on 18010,
+    // dss-2.utmverse.com on 18020 (all 127.0.0.1 in /etc/hosts), mock-oauth on 18100.
+    staging: {
+        DSS_HOST: 'dss-0.utmverse.com',
+        DSS_BASE_URL: 'http://dss-0.utmverse.com:18000',
+        OAUTH_BASE_URL: 'http://localhost:18100',
+        KEY_FILE: 'saKeyStaging.json',
+        USS_BASE_URL: 'https://test.utmverse.com',
+    },
+};
 
+// The env's settings with any CLI overrides applied on top (undefined overrides are ignored).
+function getConfig(env, overrides = {}) {
+    const base = ENVS[env];
+    if (!base) throw new Error(`Unknown environment: ${env} (expected one of: ${Object.keys(ENVS).join(', ')})`);
 
-function getConfig(env) {
-    switch (env) {
-        case 'prequal':
-            return {
-                DSS_HOST: 'prequal-dss.utmverse.com',
-                DSS_BASE_URL: 'https://prequal-dss.utmverse.com',
-                OAUTH_BASE_URL: 'https://oauth.us-pre-qual.rpasplatform.net',
-                KEY_FILE: './saKey.json',
-                USS_BASE_URL: 'https://prequal.utmverse.com',
-            };
-        case 'qual':
-            return {
-                DSS_HOST: 'qual-dss.utmverse.com',
-                DSS_BASE_URL: 'https://qual-dss.utmverse.com',
-                OAUTH_BASE_URL: 'https://oauth.us-qual-partners.rpasplatform.net',
-                KEY_FILE: './saKey.json',
-                USS_BASE_URL: 'https://qual.utmverse.com',
-            };
-        case 'sim':
-            return {
-                DSS_HOST: 'sim-dss.utmverse.com',
-                DSS_BASE_URL: 'https://sim-dss.utmverse.com',
-                OAUTH_BASE_URL: 'https://oauth.us-simulation.rpasplatform.net',
-                KEY_FILE: './saKey.json',
-                USS_BASE_URL: 'https://sim.utmverse.com',
-            };
-        case 'prod':
-            return {
-                DSS_HOST: 'us-dss.utmverse.com',
-                DSS_BASE_URL: 'https://us-dss.utmverse.com',
-                OAUTH_BASE_URL: 'https://oauth.us.rpasplatform.net',
-                KEY_FILE: './saKeyProd.json',
-                USS_BASE_URL: 'https://uss.us.utmverse.com',
-            };
-        case 'staging':
-            return {
-                DSS_HOST: 'dss-0',
-                DSS_BASE_URL: 'http://laddu.local:8082',
-                OAUTH_BASE_URL: 'http://laddu.local:8084',
-                KEY_FILE: './saKeyStaging.json',
-                USS_BASE_URL: 'https://laddu.local:8086',
-            };
-        default:
-            throw new Error(`Unknown environment: ${env}`);
+    const cfg = { ENV: env, ...base, KEY_FILE: path.join(__dirname, base.KEY_FILE) };
+    for (const [key, value] of Object.entries(overrides)) {
+        if (value !== undefined) cfg[key] = key === 'KEY_FILE' ? path.resolve(value) : value;
     }
+    return cfg;
 }
 
-const { DSS_HOST, DSS_BASE_URL, OAUTH_BASE_URL, KEY_FILE, USS_BASE_URL } = getConfig(ENV);
-
-module.exports = { DSS_HOST, DSS_BASE_URL, OAUTH_BASE_URL, KEY_FILE, USS_BASE_URL, CACHE_FILE };
+module.exports = { ENVS, getConfig };
