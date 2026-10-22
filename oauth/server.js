@@ -138,11 +138,12 @@ async function handleToken(req, res) {
 
     // --- Parse and validate requested scopes ---
     const body = await parseBody(req);
-    const requestedScope = body.scope;
+    // Also accepted from the query string, where monitoring's ServiceAccount auth adapter sends it.
+    const requestedScope = body.scope || query.scope;
     if (!requestedScope) {
         return json(res, 400, {
             error: 'invalid_scope',
-            error_description: 'scope is required in request body',
+            error_description: 'scope is required in the request body or query string',
             available_scopes: VALID_SCOPES,
         });
     }
