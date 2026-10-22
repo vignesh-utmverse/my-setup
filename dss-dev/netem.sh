@@ -21,6 +21,7 @@
 #   ./netem.sh show    [container...]   qdiscs with packet counters
 #   ./netem.sh clear   [container...]   remove the rules
 #   ./netem.sh check   [container]      ping every other address on the network (default: dss-0)
+#   ./netem.sh help                     this text
 #
 # Settings for apply:
 #   INTRA_RTT_MS  range within an instance, in ms (default 0.2-2)
@@ -43,7 +44,7 @@ STATE=$(dirname "$0")/.netem-$NETWORK
 
 usage() {
   sed -n '2,/^$/s/^# \{0,1\}//p' "$0"
-  exit 2
+  exit "${1:-2}"
 }
 
 ip2int() {
@@ -64,9 +65,22 @@ instance_of() {
   echo "${a##*.}"
 }
 
+# Checked before anything touches Docker, so that help works without the pool.
+cmd=${1:-}
+[ $# -gt 0 ] && shift
+case "$cmd" in
+  apply|reapply|show|clear|check) ;;
+  help|-h|--help) usage 0 ;;
+  *) usage ;;
+esac
+
 # ---------------------------------------------------------------- network layout
-read -r SUBNET GATEWAY IP_RANGE < <(docker network inspect "$NETWORK" \
-  --format '{{range .IPAM.Config}}{{.Subnet}} {{.Gateway}} {{.IPRange}}{{end}}')
+if ! ipam=$(docker network inspect "$NETWORK" \
+    --format '{{range .IPAM.Config}}{{.Subnet}} {{.Gateway}} {{.IPRange}}{{end}}' 2>/dev/null); then
+  echo "network $NETWORK not found: start the pool (docker compose --profile no-init up -d)" >&2
+  exit 1
+fi
+read -r SUBNET GATEWAY IP_RANGE <<< "$ipam"
 # An unset ip_range prints as "invalid Prefix".
 if [[ ${IP_RANGE:-} != */* ]]; then
   echo "$NETWORK has no ip_range, so it predates the static IPs in docker-compose.yaml." >&2
@@ -208,8 +222,6 @@ apply_rules() {
 }
 
 # ---------------------------------------------------------------- commands
-cmd=${1:-}
-[ $# -gt 0 ] && shift
 case "$cmd" in
   apply)
     [ $# -eq 0 ] || usage
