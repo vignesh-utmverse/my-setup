@@ -472,12 +472,14 @@ services:
       - --datastore_ssl_dir=/certs
 
   # ---------------------------------------------------------------- auth
-  # Built from ../oauth; pull_policy: build rebuilds it on every `up` so source edits are picked up.
+  # Built from ../oauth only when the mock-oauth:latest image does not exist yet; pull_policy: never
+  # also keeps compose from looking for that image in a registry first. After editing ../oauth:
+  #   docker compose --profile no-init up -d --build mock-oauth
   mock-oauth:
     <<: *both-profiles
     build: ../oauth
     image: mock-oauth:latest
-    pull_policy: build
+    pull_policy: never
     restart: on-failure
     container_name: mock-oauth
     networks:
