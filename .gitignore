@@ -3,3 +3,4 @@ dss-test/saKey.json
 dss-test/saKeyProd.json
 dss-test/saKeyStaging.json
 dss-dev/.netem-*
+benchmarker/output/

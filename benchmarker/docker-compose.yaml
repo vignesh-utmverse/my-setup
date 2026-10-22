@@ -1,0 +1,39 @@
+# Runs the InterUSS benchmarker (interuss/monitoring) against the local DSS pool in ../dss-dev.
+#
+# The pool must be up first: this joins its network, dss-dev_cluster, where the DSS instances are
+# http://dss-<i>.test and mock-oauth is http://mock-oauth. The benchmarker gets a dynamic address in
+# 172.19.255.0/24, which ../dss-dev/netem.sh does not delay.
+#
+# Usage, from this folder:
+#   docker compose run --rm benchmarker                           runs scd_congested.jsonnet
+#   CONFIG=scd_spread docker compose run --rm benchmarker         runs scd_spread.jsonnet
+#   OUTPUT=scd_congested_seed4242 docker compose run --rm benchmarker
+#                                                                 names the output folder
+# Results go to output/<OUTPUT, default CONFIG>/ (ignored by git).
+#
+# Tokens come from mock-oauth through the dss-test staging service account key, mounted read-only.
+# Runs as 1000:1000 so the results belong to you; set BENCH_USER=<uid>:<gid> for another user.
+
+services:
+  benchmarker:
+    image: interuss/monitoring:v0.35.0
+    user: ${BENCH_USER:-1000:1000}
+    working_dir: /app
+    networks: [cluster]
+    volumes:
+      - .:/benchmarker
+      - ../dss-test/saKeyStaging.json:/keys/sa.json:ro
+    command:
+      - uv
+      - run
+      - python
+      - monitoring/benchmarker/benchmark.py
+      - --config
+      - file:///benchmarker/${CONFIG:-scd_congested}.jsonnet
+      - --output
+      - /benchmarker/output/${OUTPUT:-${CONFIG:-scd_congested}}
+
+networks:
+  cluster:
+    external: true
+    name: dss-dev_cluster
