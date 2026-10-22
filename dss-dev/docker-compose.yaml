@@ -2,7 +2,6 @@
 # All 9 nodes join one CockroachDB cluster, as in a real pool.
 #
 # Before the first `docker compose up`:
-#   docker network create cluster
 #   cat instance-0/ca.crt instance-1/ca.crt instance-2/ca.crt > ca-bundle.crt
 #
 # Profiles (every service is in one, so always pass --profile):
@@ -21,6 +20,14 @@
 #   2        | 18020    | 18021 18022 18023   | 18024 18025 18026
 #   Offsets 7-9 of each block are free. mock-oauth is on 18100.
 #
+# Static IPs on the cluster network (172.19.0.0/16): 172.19.<i>.<10 + port offset>
+#   instance | DSS         | CRDB node 0/1/2
+#   0        | 172.19.0.10 | 172.19.0.11 172.19.0.12 172.19.0.13
+#   1        | 172.19.1.10 | 172.19.1.11 172.19.1.12 172.19.1.13
+#   2        | 172.19.2.10 | 172.19.2.11 172.19.2.12 172.19.2.13
+#   Everything else (mock-oauth, init jobs) gets a dynamic address from 172.19.255.0/24,
+#   so it can never take one of the pinned addresses.
+#
 # Each DSS accepts tokens for audience dss-<i> or dss-<i>.test.
 #
 # Inside the "cluster" network each CockroachDB node is reachable as
@@ -28,6 +35,11 @@
 
 networks:
   cluster:
+    ipam:
+      config:
+        - subnet: 172.19.0.0/16
+          gateway: 172.19.0.1
+          ip_range: 172.19.255.0/24
 
 x-crdb-image: &crdb-image
   image: cockroachdb/cockroach:v24.1.3
@@ -68,6 +80,7 @@ services:
     container_name: crdb-0-0
     networks:
       cluster:
+        ipv4_address: 172.19.0.11
         aliases: [0.crdb.instance-0.test]
     ports:
       - "18001:26257"
@@ -91,6 +104,7 @@ services:
     container_name: crdb-0-1
     networks:
       cluster:
+        ipv4_address: 172.19.0.12
         aliases: [1.crdb.instance-0.test]
     ports:
       - "18002:26257"
@@ -114,6 +128,7 @@ services:
     container_name: crdb-0-2
     networks:
       cluster:
+        ipv4_address: 172.19.0.13
         aliases: [2.crdb.instance-0.test]
     ports:
       - "18003:26257"
@@ -137,6 +152,7 @@ services:
     container_name: dss-0
     networks:
       cluster:
+        ipv4_address: 172.19.0.10
         aliases: [dss-0.test]
     ports:
       - "18000:80"
@@ -177,6 +193,7 @@ services:
     container_name: crdb-1-0
     networks:
       cluster:
+        ipv4_address: 172.19.1.11
         aliases: [0.crdb.instance-1.test]
     ports:
       - "18011:26257"
@@ -200,6 +217,7 @@ services:
     container_name: crdb-1-1
     networks:
       cluster:
+        ipv4_address: 172.19.1.12
         aliases: [1.crdb.instance-1.test]
     ports:
       - "18012:26257"
@@ -223,6 +241,7 @@ services:
     container_name: crdb-1-2
     networks:
       cluster:
+        ipv4_address: 172.19.1.13
         aliases: [2.crdb.instance-1.test]
     ports:
       - "18013:26257"
@@ -246,6 +265,7 @@ services:
     container_name: dss-1
     networks:
       cluster:
+        ipv4_address: 172.19.1.10
         aliases: [dss-1.test]
     ports:
       - "18010:80"
@@ -274,6 +294,7 @@ services:
     container_name: crdb-2-0
     networks:
       cluster:
+        ipv4_address: 172.19.2.11
         aliases: [0.crdb.instance-2.test]
     ports:
       - "18021:26257"
@@ -297,6 +318,7 @@ services:
     container_name: crdb-2-1
     networks:
       cluster:
+        ipv4_address: 172.19.2.12
         aliases: [1.crdb.instance-2.test]
     ports:
       - "18022:26257"
@@ -320,6 +342,7 @@ services:
     container_name: crdb-2-2
     networks:
       cluster:
+        ipv4_address: 172.19.2.13
         aliases: [2.crdb.instance-2.test]
     ports:
       - "18023:26257"
@@ -343,6 +366,7 @@ services:
     container_name: dss-2
     networks:
       cluster:
+        ipv4_address: 172.19.2.10
         aliases: [dss-2.test]
     ports:
       - "18020:80"
