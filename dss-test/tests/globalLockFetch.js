@@ -6,6 +6,7 @@ const SCOPE = 'interuss.pool_status.read';
 
 module.exports = {
     description: 'Read the SCD lock mode from one or more DSS instances',
+    deprecated: 'the DSS has no /aux/v1/configuration/scd_lock_mode endpoint (not in v0.23.0, so it answers 404); use globalOptions, which reports scd_global_lock and scd_hash_lock',
     options: {
         target: { type: 'string', multiple: true, desc: 'DSS to query as <url>[=<audience>]; repeat for several (default: the env DSS_TARGETS, else the env DSS)' },
     },

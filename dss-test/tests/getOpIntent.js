@@ -3,6 +3,7 @@ const { request } = require('../lib/http.js');
 
 module.exports = {
     description: 'Fetch an operational intent from the DSS, then its details from the managing USS',
+    allEnvs: true,
     options: {
         id: { type: 'string', desc: 'Operational intent ID (required)' },
     },

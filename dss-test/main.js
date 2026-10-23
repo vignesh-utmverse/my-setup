@@ -20,6 +20,15 @@ const GLOBAL_OPTIONS = {
     help:        { type: 'boolean', short: 'h', desc: "Show help; with --test, show that test's options" },
 };
 
+// Tests run only against staging (the local pool in ../dss-dev) unless they set allEnvs: most of them
+// write into the DSS or load it, so they must not reach a shared DSS by accident. A test that sets
+// deprecated (a message) still runs, with a warning, but is no longer listed or completed.
+const STAGING = 'staging';
+
+function envsFor(test) {
+    return test.allEnvs ? Object.keys(ENVS) : [STAGING];
+}
+
 function testNames() {
     return fs.readdirSync(TESTS_DIR).filter(f => f.endsWith('.js')).map(f => f.slice(0, -3)).sort();
 }
@@ -40,10 +49,18 @@ function describeOptions(options) {
 function usage(testName, test) {
     const lines = ['Usage: node main.js --env <env> --test <test> [options]', '', 'Global options:', describeOptions(GLOBAL_OPTIONS)];
     if (test) {
-        lines.push('', `${testName}: ${test.description}`, describeOptions(test.options));
+        lines.push('', `${testName}: ${test.description}`, `Environments: ${test.allEnvs ? 'all' : `${STAGING} only`}`);
+        if (test.deprecated) lines.push(`Deprecated: ${test.deprecated}`);
+        lines.push(describeOptions(test.options));
     } else {
-        lines.push('', 'Tests:');
-        for (const name of testNames()) lines.push(`  ${name.padEnd(20)} ${loadTest(name).description}`);
+        const deprecated = [];
+        lines.push('', 'Tests (run against every environment unless marked staging only):');
+        for (const name of testNames()) {
+            const t = loadTest(name);
+            if (t.deprecated) deprecated.push(`  ${name.padEnd(20)} ${t.deprecated}`);
+            else lines.push(`  ${name.padEnd(20)} ${t.description}${t.allEnvs ? '' : ` (${STAGING} only)`}`);
+        }
+        if (deprecated.length) lines.push('', 'Deprecated:', ...deprecated);
         lines.push('', 'Add --help after --test <name> for its options, e.g. node main.js --test injectRid --help');
     }
     return lines.join('\n');
@@ -55,15 +72,26 @@ function complete(line) {
     const words = line.split(/\s+/);
     const current = words.pop();  // '' right after a space
     const args = words.slice(words.findIndex(w => w.endsWith('main.js')) + 1);
-    const testAt = args.findIndex(a => a === '--test' || a === '-t');
-    const testName = testAt === -1 ? undefined : args[testAt + 1];
-    const options = { ...GLOBAL_OPTIONS, ...(testNames().includes(testName) ? loadTest(testName).options : {}) };
+    const valueOf = (long, short) => {
+        const at = args.findIndex(a => a === long || a === short);
+        return at === -1 ? undefined : args[at + 1];
+    };
+    const testName = valueOf('--test', '-t');
+    const envName = valueOf('--env', '-e');
+    const test = testNames().includes(testName) ? loadTest(testName) : undefined;
+    const options = { ...GLOBAL_OPTIONS, ...(test?.options ?? {}) };
     const nameOf = flag => flag.startsWith('--') ? flag.slice(2) : Object.keys(options).find(n => options[n].short === flag.slice(1));
 
     const prev = nameOf(args[args.length - 1] ?? '');
     let candidates = [];
     if (options[prev]?.type === 'string') {
-        candidates = prev === 'env' ? Object.keys(ENVS) : prev === 'test' ? testNames() : options[prev].choices ?? [];
+        // Envs the chosen test may run against, and tests the chosen env allows; deprecated tests are left out.
+        if (prev === 'env') candidates = test ? envsFor(test) : Object.keys(ENVS);
+        else if (prev === 'test') candidates = testNames().filter(name => {
+            const t = loadTest(name);
+            return !t.deprecated && (!envName || envsFor(t).includes(envName));
+        });
+        else candidates = options[prev].choices ?? [];
     } else if (current.startsWith('-')) {
         const used = new Set(args.filter(a => a.startsWith('-')).map(nameOf));
         candidates = Object.keys(options).filter(n => !used.has(n) || options[n].multiple).map(n => `--${n}`);
@@ -112,6 +140,10 @@ async function main() {
         KEY_FILE: opts['key-file'],
         USS_BASE_URL: opts['uss-url'],
     });
+    if (!envsFor(test).includes(cfg.ENV)) {
+        throw new Error(`${opts.test} only runs against ${envsFor(test).join(', ')}, not ${cfg.ENV}`);
+    }
+    if (test.deprecated) console.warn(`Warning: ${opts.test} is deprecated: ${test.deprecated}\n`);
 
     console.log(`env: ${cfg.ENV} | dss: ${cfg.DSS_BASE_URL} (aud ${cfg.DSS_HOST}) | test: ${opts.test}\n`);
     await test.run(cfg, opts);

@@ -3,6 +3,7 @@ const { request } = require('../lib/http.js');
 
 module.exports = {
     description: 'Delete operational intents by ID and OVN',
+    allEnvs: true,
     options: {
         intent: { type: 'string', multiple: true, desc: 'Intent to delete as <id>[:<ovn>]; repeat for several (getFlightPlans prints OVNs)' },
     },

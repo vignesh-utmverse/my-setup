@@ -4,6 +4,7 @@ const { num } = require('../lib/args.js');
 
 module.exports = {
     description: 'Query operational intents in a box and list those of one manager',
+    allEnvs: true,
     options: {
         lat:          { type: 'string', default: '37.7633546504290', desc: 'Box centre latitude' },
         lng:          { type: 'string', default: '-122.4137267893253', desc: 'Box centre longitude' },

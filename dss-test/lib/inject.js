@@ -26,7 +26,6 @@ const INJECT_OPTIONS = {
     'timeout-sec':       { type: 'string', default: '30', desc: 'Per-request timeout, in seconds' },
     out:                 { type: 'string', desc: 'Write every request (ID, version, status, latency) to this JSON file' },
     'dry-run':           { type: 'boolean', desc: 'Print one sample request of each kind and exit' },
-    'allow-prod':        { type: 'boolean', desc: 'Required to inject into prod' },
 };
 
 const M_PER_DEG_LAT = 111320;
@@ -152,7 +151,6 @@ async function inject(cfg, opts, title, kinds) {
     if (windowSec <= 0) throw new Error('--window-sec must be > 0');
     if (intervalSec < 0) throw new Error('--wave-interval-sec must be >= 0');
     if (sizeM <= 0 || spacingKm < 0) throw new Error('--size-m must be > 0 and --spacing-km >= 0');
-    if (cfg.ENV === 'prod' && !opts['allow-prod']) throw new Error('Refusing to inject into prod without --allow-prod');
 
     const layout = grid(count, { lat, lng, spacingKm, sizeM });
     // Times are taken when each request is sent, so queued requests still get a full window.

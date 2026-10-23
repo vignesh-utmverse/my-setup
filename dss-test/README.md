@@ -49,24 +49,32 @@ The per-env defaults are in `config.js`. `staging` points at the local pool:
 example `--dss-url http://dss-1.test:18010 --dss-host dss-1.test`. `--target` takes the
 audience from the URL's host name, so `--target http://dss-1.test:18010` is enough.
 
-Tests that take `--target` (`injectRid`, `injectScd`, `globalOptions`, `globalLockFetch`) default to
-the env's `DSS_TARGETS` list when no `--target` is given. In `staging` that list is all three local
-instances, so these tests spread across the whole pool. Pass `--target` to use specific instances
-instead, or `--dss-url` to use just that one DSS.
+Tests that take `--target` (`injectRid`, `injectScd`, `globalOptions`) default to the env's
+`DSS_TARGETS` list when no `--target` is given. In `staging` that list is all three local instances,
+so these tests spread across the whole pool. Pass `--target` to use specific instances instead, or
+`--dss-url` to use just that one DSS. `--target` values are parsed by `parseTarget()` and `targets()`
+in `lib/args.js`.
 
 ### Tests
 
-| Test | What it does | Main options |
-|------|--------------|--------------|
-| `injectRid` | Creates thousands of short-lived RID ISAs and RID subscriptions | see below |
-| `injectScd` | Creates thousands of short-lived SCD operational intents (flights) and SCD subscriptions | see below |
-| `createFlightPlan` | Creates an operational intent with its own subscription | `--vertices`, `--duration-min`, `--state`, `--key` |
-| `getFlightPlans` | Queries operational intents in a box and lists one manager's | `--lat`, `--lng`, `--hours`, `--manager` |
-| `getOpIntent` | Fetches an intent from the DSS, then from its USS | `--id` |
-| `deleteOpIntent` | Deletes operational intents | `--intent <id>:<ovn>` (repeatable) |
-| `globalOptions` | Reads global options from one or more DSS instances | `--target <url>=<audience>` (repeatable) |
-| `globalLockFetch` | Reads the SCD lock mode from one or more DSS instances | `--target <url>=<audience>` (repeatable) |
-| `ussAvailability` | Reads a USS availability status | `--uss` |
+Only the tests marked "all" run outside `staging`; the rest refuse any other env, since they write
+into the DSS or load it. A test declares this with `allEnvs: true` in its module; without it, it is
+staging only.
+
+| Test | What it does | Envs | Main options |
+|------|--------------|------|--------------|
+| `getFlightPlans` | Queries operational intents in a box and lists one manager's | all | `--lat`, `--lng`, `--hours`, `--manager` |
+| `getOpIntent` | Fetches an intent from the DSS, then from its USS | all | `--id` |
+| `deleteOpIntent` | Deletes operational intents | all | `--intent <id>:<ovn>` (repeatable) |
+| `globalOptions` | Reads global options, including the SCD lock settings, from one or more DSS instances | all | `--target <url>=<audience>` (repeatable) |
+| `injectRid` | Creates thousands of short-lived RID ISAs and RID subscriptions | staging | see below |
+| `injectScd` | Creates thousands of short-lived SCD operational intents (flights) and SCD subscriptions | staging | see below |
+| `createFlightPlan` | Creates an operational intent with its own subscription | staging | `--vertices`, `--duration-min`, `--state`, `--key` |
+| `ussAvailability` | Reads a USS availability status | staging | `--uss` |
+
+`globalLockFetch` is deprecated: it reads `/aux/v1/configuration/scd_lock_mode`, which the DSS does
+not have (not in v0.23.0), so it gets a 404. Use `globalOptions`, which reports `scd_global_lock` and
+`scd_hash_lock`. It still runs, with a warning, but is no longer listed or tab-completed.
 
 Negative numbers can be passed directly, as in `--lng -122.41`.
 
@@ -104,7 +112,7 @@ node main.js -e staging -t injectScd --count 10 --dry-run
 At the end of each wave the script prints success, failure and retry counts, p50/p95/p99 latency per
 kind, and failures grouped by status and message. It exits with code 1 if any request failed.
 `--out` writes every request (ID, version or OVN, target, window, status, latency) to a JSON file.
-Injecting into `prod` is refused unless you pass `--allow-prod`.
+Injection runs against `staging` only.
 
 Records are laid out on a grid, `--spacing-km` apart (default 3 km), with `--size-m` squares
 (default 200 m), so each gets its own S2 cells. 1000 records span about 93 km and 10,000 about
