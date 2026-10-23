@@ -168,8 +168,13 @@
         {name: 'usl', value: 'USLFit.from_data(scale, throughputs[scenario_index])'},
       ],
       x_axis: {label: if sequential then 'Simulated USS users' else 'Simulated USS users (all instances)'},
-      y_axis: {label: 'Throughput\n(Flights/s)', min_value: 0, max_value_expr: 'max(throughputs)'},
-      y_axes: [{label: 'Latency\n(ms)', min_value: 0, max_value_expr: 'max(latencies)'}],
+      // The largest value across every scenario, so all panels share one scale, plus headroom so peaks
+      // are not drawn on the frame: 5% for throughput and 30% for latency, so the two peaks never land
+      // on the same spot (the latency axis is drawn over the throughput one and would hide it).
+      // (max() over the per-scenario lists, as in InterUSS's configs, compares the lists element by
+      // element and can pick one whose largest value is not the overall largest, clipping other panels.)
+      y_axis: {label: 'Throughput\n(Flights/s)', min_value: 0, max_value_expr: 'max([max(t + [0]) for t in throughputs]) * 1.05'},
+      y_axes: [{label: 'Latency\n(ms)', min_value: 0, max_value_expr: 'max([max(t + [0]) for t in latencies]) * 1.3'}],
       xy_plots: [
         {
           type: 'Line',
