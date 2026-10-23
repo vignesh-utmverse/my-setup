@@ -13,8 +13,8 @@
 //   users_per_dss_per_step  users added per DSS instance at each ramp step
 //   behavior(dss_list)      what a user does with its flights, using the DSS instances in dss_list
 //   ramp_criteria           when ramp steps and the ramp end
-//   actions, setup,         subscription actions, and which run before the first ramp and after the last
-//   teardown
+//   actions, setup,         subscription actions, which of them run before the first ramp, and which
+//   teardown                when the run ends, even after Ctrl+C or an error
 //   latency_series          DSS calls whose latency is charted
 {
   dss_instances: ['dss-0', 'dss-1', 'dss-2'],
@@ -147,9 +147,9 @@
       if sequential then [
         scenario('%s: %s' % [dss[i], label], 'Ramp for %s' % dss[i],
                  if i == 0 then spec.setup else [],
-                 if i < n - 1 then [intermediate] else spec.teardown)
+                 if i < n - 1 then [intermediate] else [])
         for i in std.range(0, n - 1)
-      ] else [scenario('Pool: %s' % label, 'Ramp for the pool', spec.setup, spec.teardown)];
+      ] else [scenario('Pool: %s' % label, 'Ramp for the pool', spec.setup, [])];
 
     local panel_titles =
       if sequential then [dss[i] for i in std.range(0, n - 1)]
@@ -238,6 +238,11 @@
           defined_artifact_indices: [0, 1],
         },
       }] else []),
+
+      // The engine runs these when the whole run ends, also after Ctrl+C or an error, so an interrupted
+      // run does not leave subscriptions behind to skew the next one. A scenario's own teardown would
+      // only run after its ramp completes.
+      [if std.length(spec.teardown) > 0 then 'teardown_actions']: spec.teardown,
 
       user_types: users,
       loads: loads,

@@ -15,6 +15,9 @@ services:
   benchmarker:
     image: interuss/monitoring:v0.35.0
     user: ${BENCH_USER:-1000:1000}
+    # That user has no home folder in the image; matplotlib and other tools keep their files here.
+    environment:
+      HOME: /tmp
     working_dir: /app
     networks: [cluster]
     volumes:

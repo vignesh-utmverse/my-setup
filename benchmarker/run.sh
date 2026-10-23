@@ -138,7 +138,7 @@ if $show_config; then
   cat "$out/config.json"
 fi
 
-run=(docker compose run --rm benchmarker
+run=(docker compose run --rm --quiet-pull benchmarker
   uv run python monitoring/benchmarker/benchmark.py
   --config "file:///benchmarker/$out/config.json"
   --output "/benchmarker/$out")

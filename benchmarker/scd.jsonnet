@@ -20,7 +20,7 @@ local spec(subscriptions) =
     description: 'SCD op intent created (Accepted) 20 s before the flight, activated 10 s before, deleted 1 s after',
     timing: 'the next flight starts 29-31 s after the previous one ends',
     subscriptions_summary:
-      if explicit then 'explicit: 1 shared SCD subscription, created before the ramp and deleted after'
+      if explicit then 'explicit: 1 shared SCD subscription, created before the ramp, deleted at the end even if interrupted'
       else 'implicit: the DSS gives each op intent its own SCD subscription',
     stop_summary: 'when throughput falls below 70% of its peak',
     apis: ['scd'],

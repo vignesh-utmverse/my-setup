@@ -15,7 +15,7 @@ local spec = {
   label: 'NetRID',
   description: 'NetRID ISA created as the flight starts, deleted 2 s after it ends',
   timing: 'back to back: the next flight starts as the previous one ends',
-  subscriptions_summary: '%d RID subscriptions over the spot, created before the ramp and deleted after' % num_subscriptions,
+  subscriptions_summary: '%d RID subscriptions over the spot, created before the ramp, deleted at the end even if interrupted' % num_subscriptions,
   stop_summary: 'when throughput falls below 70% of its peak, over 10 flights fail, flights average over 20 s, or a step takes over 30 s to settle',
   apis: ['rid'],
   scopes: [
